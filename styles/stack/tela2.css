@@ -1,0 +1,25 @@
+/* =============================================================
+   tela2.css  -  Detalhe da vulnerabilidade.
+   ============================================================= */
+
+.screen--detail .detail-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 2px;
+}
+.screen--detail .detail-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+.screen--detail .detail-version {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, monospace;
+}
+
+/* Espacamento entre os blocos de campo */
+.screen--detail .field { margin-bottom: 12px; }
