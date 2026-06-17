@@ -1,0 +1,35 @@
+<section class="screen screen--reputation">
+  <h2 class="section-title">Análise de Domínio</h2>
+
+  <div class="field">
+    <span class="field__label">URL Atual</span>
+    <div class="field__value field__value--mono" id="rep-url">A carregar...</div>
+  </div>
+
+  <div class="field">
+    <span class="field__label">Protocolo Seguro (HTTPS)</span>
+    <div class="field__value" id="rep-https">A carregar...</div>
+  </div>
+
+   <details class="headers-dropdown" style="margin-top: 15px;">
+    <summary class="section-title" style="cursor: pointer; outline: none; margin-bottom: 10px; list-style: none;">
+      Cabeçalhos de Segurança <span style="font-size: 0.8em; opacity: 0.7;">&#9660; (Clique para ver)</span>
+    </summary>
+    <div class="tech-list" id="rep-headers-list" style="margin-top: 10px;">
+      </div>
+  </details>
+
+  <h2 class="section-title">Reputação e Blacklists (OSINT)</h2>
+  
+  <div class="field">
+    <span class="field__label">VirusTotal</span>
+    <div class="field__value" id="rep-vt">Analisando...</div>
+  </div>
+
+  <div class="field">
+    <span class="field__label">AbuseIPDB</span>
+    <div class="field__value" id="rep-abuse">Analisando...</div>
+  </div>
+
+  <p class="hint" style="margin-top: 20px;">A reputação avalia configurações e o histórico do domínio em bases de ameaças como VirusTotal e AbuseIPDB.</p>
+</section>
