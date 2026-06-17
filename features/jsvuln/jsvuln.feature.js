@@ -8,16 +8,12 @@
 export const jsvulnFeature = {
   id: "jsvuln",
   title: "Vulnerabilidades JS",
-  initialRoute: "soon",
+  initialRoute: "jsvuln",
   routes: {
-    soon: {
-      html: "components/placeholder.html",
-      script: "components/placeholder.js",
-      css: "components/placeholder.css",
-      data: {
-        title: "Analise de Vulnerabilidades JS",
-        text: "Deteccao de falhas como XSS e CSRF no JavaScript da pagina. Em desenvolvimento.",
-      },
+    jsvuln: {
+      html: "features/jsvuln/views/jsvuln.html",
+      script: "features/jsvuln/scripts/jsvuln.js",
+      css: "features/jsvuln/jsvuln.css",
     },
   },
 };
