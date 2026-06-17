@@ -17,5 +17,32 @@
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-  "permissions": ["activeTab", "scripting"]
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "scripts/vulnerabilidades/sink-interceptor.js"
+      ],
+      "world": "MAIN",
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "scripts/vulnerabilidades/sink-relay.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true
+    }
+  ]
 }

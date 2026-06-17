@@ -1,4 +1,44 @@
-<section>
-    <p>Vulnerabilidades encontradas</p>
+<section class="scanner-section" aria-labelledby="scanner-heading">
+  <header class="scanner-header">
+    <h2 id="scanner-heading">Análise de Vulnerabilidades DOM/JS</h2>
+    <p class="scanner-subtitle">
+      Verificação estática da página atual e monitoramento de sinks perigosos em tempo real.
+    </p>
+  </header>
 
+  <div class="scanner-controls">
+    <button id="start-scan-btn" class="scan-btn" type="button">
+      <svg class="scan-btn__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm10 2-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="scan-btn__label">Analisar Página Atual</span>
+    </button>
+
+    <span class="scanner-status" id="scan-status" role="status" aria-live="polite"></span>
+  </div>
+
+  <!-- ===== Bloco: Análise Estática ===== -->
+  <div class="result-block" id="static-block" data-state="idle">
+    <div class="result-block__title">
+      <span class="badge badge--static">Estática</span>
+      <span>Resultado da análise da página atual</span>
+    </div>
+    <div class="result-block__body" id="static-results">
+      <p class="empty-state">Clique em "Analisar Página Atual" para iniciar a verificação.</p>
+    </div>
+  </div>
+
+  <!-- ===== Bloco: Interceptação Dinâmica (tempo real) ===== -->
+  <div class="result-block" id="dynamic-block" data-state="idle">
+    <div class="result-block__title">
+      <span class="badge badge--dynamic">Tempo real</span>
+      <span>Sinks interceptados durante a navegação</span>
+    </div>
+    <ul class="result-block__body result-list" id="dynamic-results" aria-live="polite">
+      <li class="empty-state">Nenhum sink perigoso interceptado até agora.</li>
+    </ul>
+  </div>
+
+  <!-- ===== Área de resultados consolidada (usada pelo gerador de relatório/PDF) ===== -->
+  <div id="results-container" hidden></div>
 </section>
