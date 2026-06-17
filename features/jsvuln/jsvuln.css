@@ -1,0 +1,208 @@
+/* =============================================================
+   jsvuln.css  -  Estilos da feature "Analise de Vulnerabilidades
+   DOM/JS". Segue os tokens e padroes visuais de main.css/stacks.css.
+   ============================================================= */
+
+/* ---------- Container raiz: nunca gera scroll horizontal ---------- */
+.scanner-section {
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.scanner-section * {
+  max-width: 100%;
+}
+
+/* ---------- Cabecalho da secao ---------- */
+.scanner-header {
+  margin-bottom: 14px;
+}
+.scanner-header h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-strong);
+  overflow-wrap: break-word;
+}
+.scanner-subtitle {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+  overflow-wrap: break-word;
+}
+
+/* ---------- Controles ---------- */
+.scanner-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.scan-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #fff;
+  background: var(--header);
+  border: none;
+  border-radius: var(--radius-field);
+  cursor: pointer;
+  transition: background 0.15s ease;
+  flex: 0 0 auto;
+}
+.scan-btn:hover { background: var(--header-dark); }
+.scan-btn:disabled { background: var(--border-strong); cursor: default; }
+.scan-btn__icon { flex: 0 0 auto; }
+.scan-btn__label {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.scanner-status {
+  font-size: 11.5px;
+  color: var(--muted);
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* ---------- Blocos de resultado ---------- */
+.result-block {
+  margin-bottom: 14px;
+  padding: 12px 13px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-soft);
+  min-width: 0;
+}
+
+.result-block__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-strong);
+  flex-wrap: wrap;
+}
+
+.result-block__title .badge {
+  flex: 0 0 auto;
+}
+
+.result-block__body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Badges especificos do scanner, usando a paleta semantica existente */
+.badge--static {
+  background: var(--panel);
+  color: var(--accent);
+  border-color: var(--border);
+}
+.badge--dynamic {
+  background: var(--ok-bg);
+  color: var(--ok-fg);
+  border-color: var(--ok-bd);
+}
+
+/* ---------- Estado vazio ---------- */
+.empty-state {
+  margin: 0;
+  padding: 14px 6px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+/* ---------- Lista de resultados (sinks interceptados) ---------- */
+.result-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ---------- Itens de achado (vulnerabilidade / sink) ---------- */
+.finding-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 11px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-field);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+.finding-item__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.finding-item__name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-strong);
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.finding-item__desc {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.finding-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+
+.finding-item__location,
+.finding-item__code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  color: var(--accent);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-field);
+  padding: 6px 9px;
+  width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Severidades reaproveitando os badges semanticos de main.css */
+.badge--alto, .badge--medio, .badge--ok { flex: 0 0 auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-btn { transition: none; }
+}
