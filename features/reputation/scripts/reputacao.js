@@ -78,10 +78,33 @@ async function checkVirusTotal(domain, containerEl) {
     const maliciousCount = stats.malicious;
     const totalCount = stats.malicious + stats.undetected + stats.harmless + stats.suspicious;
 
+    // Link direto para o relatório gráfico do VirusTotal
+    const vtLink = `https://www.virustotal.com/gui/domain/${domain}/detection`;
+
     if (maliciousCount > 0) {
-      containerEl.innerHTML = `<span class="badge badge--alto">${maliciousCount} / ${totalCount}</span> Motores detetaram ameaças!`;
+      containerEl.innerHTML = `
+        <div style="margin-bottom: 8px;">
+          <span class="badge badge--alto">${maliciousCount} / ${totalCount}</span> Motores detetaram ameaças!
+        </div>
+        <p style="font-size: 0.85em; color: #666; margin: 0 0 8px 0; line-height: 1.4;">
+          O domínio foi sinalizado por fornecedores de segurança como malicioso ou suspeito em atividades de phishing ou malware.
+        </p>
+        <a href="${vtLink}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; font-weight: bold; color: #3b5998; text-decoration: none;">
+          Ver relatório no VirusTotal &rarr;
+        </a>
+      `;
     } else {
-      containerEl.innerHTML = `<span class="badge badge--ok">Limpo</span> 0 / ${totalCount} motores reportaram problemas.`;
+      containerEl.innerHTML = `
+        <div style="margin-bottom: 8px;">
+          <span class="badge badge--ok">Limpo</span> 0 / ${totalCount} motores reportaram problemas.
+        </div>
+        <p style="font-size: 0.85em; color: #666; margin: 0 0 8px 0; line-height: 1.4;">
+          Nenhum motor de segurança detetou ameaças conhecidas associadas a este domínio no momento.
+        </p>
+        <a href="${vtLink}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; font-weight: bold; color: #3b5998; text-decoration: none;">
+          Ver relatório no VirusTotal &rarr;
+        </a>
+      `;
     }
   } catch (error) {
     console.error("[NavSec] Erro no VirusTotal:", error);
@@ -121,10 +144,33 @@ async function checkAbuseIPDB(domain, containerEl) {
     const abuseData = await abuseResponse.json();
     const score = abuseData.data.abuseConfidenceScore;
 
+    // Link direto para o relatório do IP no AbuseIPDB
+    const abuseLink = `https://www.abuseipdb.com/check/${ipAddress}`;
+
     if (score > 0) {
-      containerEl.innerHTML = `<span class="badge badge--alto">${score}%</span> Confiança de Abuso.`;
+      containerEl.innerHTML = `
+        <div style="margin-bottom: 8px;">
+          <span class="badge badge--alto">${score}%</span> Confiança de Abuso.
+        </div>
+        <p style="font-size: 0.85em; color: #666; margin: 0 0 8px 0; line-height: 1.4;">
+          O IP associado a este domínio (<strong>${ipAddress}</strong>) possui um histórico recente de atividades maliciosas reportadas (como spam, hacking ou DDoS).
+        </p>
+        <a href="${abuseLink}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; font-weight: bold; color: #3b5998; text-decoration: none;">
+          Ver relatório no AbuseIPDB &rarr;
+        </a>
+      `;
     } else {
-      containerEl.innerHTML = `<span class="badge badge--ok">${score}%</span> IP limpo na base.`;
+      containerEl.innerHTML = `
+        <div style="margin-bottom: 8px;">
+          <span class="badge badge--ok">${score}%</span> IP limpo na base.
+        </div>
+        <p style="font-size: 0.85em; color: #666; margin: 0 0 8px 0; line-height: 1.4;">
+          O IP associado a este domínio (<strong>${ipAddress}</strong>) não possui relatórios recentes de abuso ou atividade maliciosa.
+        </p>
+        <a href="${abuseLink}" target="_blank" rel="noopener noreferrer" style="font-size: 0.85em; font-weight: bold; color: #3b5998; text-decoration: none;">
+          Ver relatório no AbuseIPDB &rarr;
+        </a>
+      `;
     }
   } catch (error) {
     console.error("[NavSec] Erro no AbuseIPDB:", error);
