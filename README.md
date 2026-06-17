@@ -1,49 +1,73 @@
 # NavSec — Extensão Chrome (Manifest V3)
 
-Fundação modular de uma extensão de análise de segurança de páginas web.
+Extensão de análise de segurança de páginas web, organizada em **features**
+independentes navegáveis pelos chevrons/dots do popup.
 
 ## Como carregar (modo desenvolvedor)
 
-1. Abra o Chrome em `chrome://extensions`.
-2. Ative o **Modo do desenvolvedor** (canto superior direito).
-3. Clique em **Carregar sem compactação** e selecione a pasta `navsec/`.
-4. Clique no ícone da extensão para abrir o popup.
+1. `chrome://extensions` → ative o **Modo do desenvolvedor**.
+2. **Carregar sem compactação** → selecione a pasta `navsec/` (a que contém o `manifest.json`).
+3. Como o manifest usa `host_permissions` (api.osv.dev), confirme o acesso quando solicitado.
 
-## Estrutura
+## Arquitetura
 
 ```
 navsec/
-├── manifest.json          # MV3 + popup
-├── popup.html             # Shell (header, chevrons, #content-area, rodapé)
-├── popup.js               # Carregador de views, injeção de dependências e navegação circular
-├── styles/
-│   ├── main.css           # Design system global + componentes compartilhados
-│   ├── tela1.css          # Estilos do resumo/tecnologias
-│   ├── tela2.css          # Estilos do detalhe
-│   └── tela3.css          # Estilos da remediação
-├── views/                 # HTML injetável (sem <html>/<body>)
-│   ├── tela1.html
-│   ├── tela2.html
-│   └── tela3.html
-├── scripts/
-│   ├── data.js            # Fonte única de dados (mock) — modelo de dados
-│   ├── report.js          # Geração do PDF (botão "PDF")
-│   ├── tela1.js           # init(container, ctx) da tela 1
-│   ├── tela2.js
-│   └── tela3.js
-└── icons/                 # 16 / 48 / 128
+├── manifest.json
+├── popup.html               # shell (header, chevrons, #content-area, dots)
+├── popup.js                 # bootstrap: cria o router e registra as features
+├── core/
+│   ├── router.js            # roteador: features + sub-rotas + params + histórico
+│   ├── features.js          # registro central das features (ordem = navegação)
+│   └── view-loader.js       # carrega HTML/CSS/JS de uma rota (com cache)
+├── components/
+│   └── placeholder.(html|js|css)   # estado "em desenvolvimento" reutilizável
+├── services/                # LÓGICA / DADOS (sem acoplamento com a UI)
+│   ├── detector.js          # coleta de stacks no MAIN world
+│   ├── fingerprints.js      # escopo fechado de detecção
+│   ├── cve.js               # consulta OSV.dev + cálculo CVSS v3.1
+│   └── report.js            # geração do PDF
+├── features/                # UI por funcionalidade
+│   ├── stacks/              # Tela 1 — Análise de Stacks (IMPLEMENTADA)
+│   │   ├── stacks.feature.js
+│   │   ├── views/(list|detail).html
+│   │   ├── scripts/(list|detail).js
+│   │   └── stacks.css
+│   ├── jsvuln/              # Tela 2 — Vulnerabilidades JS (placeholder)
+│   │   └── jsvuln.feature.js
+│   └── reputation/          # Tela 3 — Reputação da Página (placeholder)
+│       └── reputation.feature.js
+├── utils/util.js
+├── styles/main.css          # design system global
+└── icons/
 ```
 
-## Como a arquitetura funciona
+### Conceitos do roteador
 
-- `popup.js` é carregado como módulo ES (`type="module"`). Ele registra as views, e para cada uma:
-  1. injeta o `<link>` do CSS específico (uma vez);
-  2. faz `fetch` do HTML e injeta em `#content-area`;
-  3. faz `import()` dinâmico do script da view e chama `init(container, ctx)`.
-- O objeto `ctx` é a **injeção de dependências**: expõe `state` (compartilhado), `goTo(id, opts)`, `next()` e `prev()`.
-- **Navegação circular**: avançar na tela 3 volta para a tela 1 (e vice-versa). Funciona pelos chevrons laterais, pelos indicadores do rodapé e pelas setas do teclado.
-- Sem scripts inline nem `onclick` no HTML — compatível com a CSP do Manifest V3.
+- **Feature**: módulo de alto nível. Os chevrons/dots alternam entre features (circular).
+- **Rota**: uma view dentro de uma feature (ex.: stacks → `list` / `detail`).
+- **Histórico interno**: pilha por sessão; o "voltar" navega dentro da feature
+  (lista ↔ detalhe) sem cruzar para outra feature.
+- Cada view exporta `init(container, ctx)`. O `ctx` injeta `state` (compartilhado),
+  `params`, `routeData` e o `router`.
 
-## Observação
+## Estado atual
 
-Os dados em `scripts/data.js` são ilustrativos. A coleta real (leitura das bibliotecas da página e consulta de CVE) é o próximo passo e exige as permissões `activeTab` e `scripting`, já declaradas no `manifest.json`.
+- **Tela 1 (Stacks)** — completa: coleta as bibliotecas da página (detector),
+  consulta CVE/CVSS (OSV.dev) e, ao clicar numa stack disponível, abre o detalhe
+  interno (CVE, CWE, CVSS, como é explorada, remediação e link para NVD/GHSA).
+- **Telas 2 e 3** — registradas como placeholders ("em desenvolvimento"),
+  já navegáveis, prontas para receber suas views e serviços.
+
+## Como adicionar a Tela 2 ou 3 no futuro
+
+1. Crie `services/<nome>.js` com a lógica.
+2. Crie `features/<nome>/` com `*.feature.js`, `views/` e `scripts/`.
+3. Troque a rota `soon` por rotas reais e inclua a feature em `core/features.js`.
+
+O núcleo (`popup.js`, `router.js`) não precisa de outras alterações.
+
+## Permissões
+
+`activeTab` + `scripting` (coleta no MAIN world) e `host_permissions`
+para `https://api.osv.dev/*` (consulta de CVE).

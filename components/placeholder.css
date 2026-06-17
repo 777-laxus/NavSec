@@ -1,0 +1,16 @@
+/* =============================================================
+   placeholder.css  -  Estado "em desenvolvimento" (Telas 2 e 3).
+   ============================================================= */
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 360px;
+  text-align: center;
+  padding: 20px;
+}
+.placeholder__icon { color: var(--border-strong); }
+.placeholder__title { margin: 0; font-size: 18px; font-weight: 700; color: var(--text-strong); }
+.placeholder__text { margin: 0; max-width: 280px; font-size: 13px; line-height: 1.5; color: var(--muted); }
