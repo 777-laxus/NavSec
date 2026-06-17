@@ -7,16 +7,12 @@
 export const reputationFeature = {
   id: "reputation",
   title: "Reputacao da Pagina",
-  initialRoute: "soon",
+  initialRoute: "reputacao",
   routes: {
-    soon: {
-      html: "components/placeholder.html",
-      script: "components/placeholder.js",
-      css: "components/placeholder.css",
-      data: {
-        title: "Reputacao da Pagina",
-        text: "Informacoes de reputacao do dominio e da pagina analisada. Em desenvolvimento.",
-      },
+    reputacao: {
+      html: "features/reputation/views/reputacao.html",
+      script: "features/reputation/scripts/reputacao.js",
+      css: "features/reputation/reputacao.css",
     },
   },
 };
