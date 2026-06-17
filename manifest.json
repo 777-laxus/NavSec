@@ -30,7 +30,7 @@
         "<all_urls>"
       ],
       "js": [
-        "scripts/vulnerabilidades/sink-interceptor.js"
+        "features/jsvuln/scripts/sink-interceptor.js"
       ],
       "world": "MAIN",
       "run_at": "document_start",
@@ -41,7 +41,7 @@
         "<all_urls>"
       ],
       "js": [
-        "scripts/vulnerabilidades/sink-relay.js"
+        "features/jsvuln/scripts/sink-relay.js"
       ],
       "run_at": "document_start",
       "all_frames": true
