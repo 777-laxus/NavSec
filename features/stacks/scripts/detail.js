@@ -7,7 +7,7 @@
 
 import { openUrl } from "../../../utils/util.js";
 
-const RISK_LABEL = { alto: "ALTO", medio: "MEDIO", ok: "OK", pendente: "-" };
+const RISK_LABEL = { alto: "ALTO", medio: "MÉDIO", ok: "OK", pendente: "-" };
 
 export function init(container, ctx) {
   const scan = ctx.state.scan;
@@ -25,7 +25,7 @@ export function init(container, ctx) {
   if (back) back.addEventListener("click", () => ctx.router.back());
 
   if (!stack) {
-    nameEl.textContent = "Stack nao encontrada";
+    nameEl.textContent = "Stack não encontrada";
     badgeEl.textContent = "-";
     badgeEl.className = "badge badge--pendente";
     versionEl.textContent = "Volte e selecione uma stack da lista.";
@@ -35,15 +35,15 @@ export function init(container, ctx) {
   nameEl.textContent = stack.name;
   badgeEl.textContent = RISK_LABEL[stack.risk] || "-";
   badgeEl.className = "badge badge--" + (stack.risk || "pendente");
-  versionEl.textContent = "Versao detectada: " + stack.version;
+  versionEl.textContent = "Versão detectada: " + stack.version;
 
   // ----- Sem vulnerabilidade / versao segura -----
   if (!stack.cveCount || !stack.worst) {
-    content.appendChild(field("Situacao", "Nenhuma CVE conhecida"));
+    content.appendChild(field("Situação", "Nenhuma CVE conhecida"));
     const box = versionBox("good", stack.version, "seguro");
-    content.appendChild(labelEl("Versao detectada"));
+    content.appendChild(labelEl("Versão detectada"));
     content.appendChild(box);
-    content.appendChild(note("Nenhuma vulnerabilidade conhecida para a versao detectada."));
+    content.appendChild(note("Nenhuma vulnerabilidade conhecida para a versão detectada."));
     return;
   }
 
@@ -51,20 +51,20 @@ export function init(container, ctx) {
 
   // ----- Vulnerabilidade (CVE mais grave) -----
   content.appendChild(field("Identificador (CVE)", w.displayId, "mono accent"));
-  content.appendChild(field("Tipo de fraqueza (CWE)", w.cwe || "Nao informado"));
+  content.appendChild(field("Tipo de fraqueza (CWE)", w.cwe || "Não informado"));
   content.appendChild(field(
     "Severidade (CVSS v3.1)",
-    w.score != null ? w.score + " - " + w.scoreLabel : (w.scoreLabel || "Nao informado"),
+    w.score != null ? w.score + " - " + w.scoreLabel : (w.scoreLabel || "Não informado"),
     "score"
   ));
-  content.appendChild(field("Como pode ser explorada", w.summary || trim(w.details) || "Sem descricao disponivel.", "multiline"));
+  content.appendChild(field("Como pode ser explorada", w.summary || trim(w.details) || "Sem descrição disponível.", "multiline"));
 
   // Redirecionamento para a pagina oficial.
   if (w.url) {
     const link = document.createElement("button");
     link.type = "button";
     link.className = "detail-link";
-    link.textContent = "Ver pagina da vulnerabilidade \u2197";
+    link.textContent = "Ver página da vulnerabilidade \u2197";
     link.addEventListener("click", () => openUrl(w.url));
     content.appendChild(link);
   }
@@ -89,12 +89,12 @@ export function init(container, ctx) {
   }
 
   // ----- Remediacao -----
-  const fixed = stack.fixedVersion ? stack.fixedVersion + " ou superior" : "consulte a referencia";
+  const fixed = stack.fixedVersion ? stack.fixedVersion + " ou superior" : "consulte a referência";
 
-  content.appendChild(sectionTitle("Remediacao"));
+  content.appendChild(sectionTitle("Remediação"));
 
-  content.appendChild(labelEl("Versao atual"));
-  content.appendChild(versionBox("bad", stack.version, "vulneravel"));
+  content.appendChild(labelEl("Versão atual"));
+  content.appendChild(versionBox("bad", stack.version, "vulnerável"));
 
   const arrow = document.createElement("div");
   arrow.className = "version-arrow";
@@ -102,16 +102,16 @@ export function init(container, ctx) {
   arrow.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 5v14m0 0 6-6m-6 6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   content.appendChild(arrow);
 
-  content.appendChild(labelEl("Versao recomendada"));
+  content.appendChild(labelEl("Versão recomendada"));
   content.appendChild(versionBox("good", fixed, "seguro"));
 
   content.appendChild(sectionTitle("Passos sugeridos"));
   const steps = document.createElement("ol");
   steps.className = "steps";
   [
-    "Atualizar " + stack.name + " para a versao " + fixed + ".",
-    "Revisar trechos que usam a biblioteca com dados de fontes nao confiaveis.",
-    "Testar a aplicacao apos a atualizacao.",
+    "Atualizar " + stack.name + " para a versão " + fixed + ".",
+    "Revisar trechos que usam a biblioteca com dados de fontes não confiáveis.",
+    "Testar a aplicação após a atualização.",
   ].forEach((t) => {
     const li = document.createElement("li");
     li.className = "steps__item";
@@ -120,7 +120,7 @@ export function init(container, ctx) {
   });
   content.appendChild(steps);
 
-  content.appendChild(labelEl("Referencia"));
+  content.appendChild(labelEl("Referência"));
   const ref = document.createElement("div");
   ref.className = "reference-card";
   ref.textContent = w.url;
@@ -129,7 +129,7 @@ export function init(container, ctx) {
   const openBtn = document.createElement("button");
   openBtn.type = "button";
   openBtn.className = "btn-outline";
-  openBtn.textContent = "Abrir referencia oficial \u2197";
+  openBtn.textContent = "Abrir referência oficial \u2197";
   openBtn.addEventListener("click", () => openUrl(w.url));
   content.appendChild(openBtn);
 

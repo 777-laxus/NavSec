@@ -14,7 +14,7 @@ const VIA_LABEL = {
   src: "via arquivo .js",
   global: "via objeto global",
 };
-const RISK_LABEL = { alto: "ALTO", medio: "MEDIO", ok: "OK", pendente: "-" };
+const RISK_LABEL = { alto: "ALTO", medio: "MÉDIO", ok: "OK", pendente: "-" };
 
 export function init(container, ctx) {
   const urlInput = container.querySelector("#page-url");
@@ -47,7 +47,7 @@ export function init(container, ctx) {
     const grid = document.createElement("div");
     grid.className = "summary-grid";
     grid.appendChild(summaryCard("alto", counts.alto, "Alto"));
-    grid.appendChild(summaryCard("medio", counts.medio, "Medio"));
+    grid.appendChild(summaryCard("medio", counts.medio, "Médio"));
     grid.appendChild(summaryCard("ok", counts.ok, "OK"));
     body.appendChild(grid);
 
@@ -60,7 +60,7 @@ export function init(container, ctx) {
     if (scan.cveStatus === "partial") {
       const warn = document.createElement("p");
       warn.className = "scan-foot__note";
-      warn.textContent = "Nao foi possivel consultar a CVE de alguns itens (verifique a conexao).";
+      warn.textContent = "Não foi possível consultar a CVE de alguns itens (verifique a conexão).";
       body.appendChild(warn);
     }
     body.appendChild(scanFoot());
@@ -76,7 +76,7 @@ export function init(container, ctx) {
     const main = document.createElement("span");
     main.className = "tech-card__main";
     main.appendChild(span("tech-card__name", stack.name));
-    main.appendChild(span("tech-card__version", "versao " + stack.version));
+    main.appendChild(span("tech-card__version", "versão " + stack.version));
     main.appendChild(span("tech-card__via", VIA_LABEL[stack.via] || "detectada"));
 
     const meta = document.createElement("span");
@@ -100,8 +100,8 @@ export function init(container, ctx) {
   }
 
   function cveLabel(stack) {
-    if (stack.status === "error") return "CVE: indisponivel";
-    if (stack.status === "skipped") return "versao desconhecida";
+    if (stack.status === "error") return "CVE: indisponível";
+    if (stack.status === "skipped") return "versão desconhecida";
     return stack.cveCount + (stack.cveCount === 1 ? " CVE" : " CVEs");
   }
 
@@ -118,7 +118,7 @@ export function init(container, ctx) {
     const msg = document.createElement("div");
     msg.className = "state-message";
     msg.appendChild(strong("Nenhuma stack conhecida encontrada"));
-    msg.appendChild(span("", "A pagina nao usa (ou nao expoe) as bibliotecas do escopo atual."));
+    msg.appendChild(span("", "A página não usa (ou não expõe) as bibliotecas do escopo atual."));
     body.appendChild(msg);
     body.appendChild(scanFoot());
   }
@@ -126,10 +126,10 @@ export function init(container, ctx) {
   function renderState(scan) {
     body.innerHTML = "";
     const map = {
-      restricted: ["Pagina nao analisavel", "Esta e uma pagina interna do navegador. Abra um site (http/https) e tente novamente."],
-      "no-tab": ["Nenhuma aba ativa", "Nao foi possivel identificar a aba atual."],
-      unsupported: ["Recurso indisponivel", "Abra a extensao a partir de uma aba normal do navegador."],
-      error: ["Falha na analise", scan.message || "Ocorreu um erro inesperado."],
+      restricted: ["Página não analisável", "Esta é uma página interna do navegador. Abra um site (http/https) e tente novamente."],
+      "no-tab": ["Nenhuma aba ativa", "Não foi possível identificar a aba atual."],
+      unsupported: ["Recurso indisponível", "Abra a extensão a partir de uma aba normal do navegador."],
+      error: ["Falha na análise", scan.message || "Ocorreu um erro inesperado."],
     };
     const [title, text] = map[scan.status] || map.error;
     const msg = document.createElement("div");
@@ -161,8 +161,8 @@ export function init(container, ctx) {
 
   // ---------- fluxo ----------
   async function runScan() {
-    setUrl("analisando...");
-    loading("Analisando a pagina...");
+    setUrl("Analisando…");
+    loading("Analisando a página…");
 
     let scan;
     try {
@@ -175,7 +175,7 @@ export function init(container, ctx) {
 
     setUrl(scan.url);
     if (scan.technologies.length) {
-      loading("Consultando CVEs (OSV.dev)...");
+      loading("Consultando CVEs (OSV.dev)…");
       try {
         const enriched = await queryAll(scan.technologies);
         scan.technologies = enriched;

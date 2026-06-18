@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "NavSec",
   "version": "0.1.0",
-  "description": "Analisa as tecnologias web e bibliotecas JavaScript da pagina atual em busca de vulnerabilidades conhecidas.",
+  "description": "Analisa as tecnologias web e bibliotecas JavaScript da página atual em busca de vulnerabilidades conhecidas.",
   "action": {
     "default_title": "NavSec",
     "default_popup": "popup.html",

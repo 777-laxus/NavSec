@@ -6,7 +6,7 @@
 
 export const reputationFeature = {
   id: "reputation",
-  title: "Reputacao da Pagina",
+  title: "Reputação da Página",
   initialRoute: "reputacao",
   routes: {
     reputacao: {
