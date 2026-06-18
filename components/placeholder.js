@@ -9,5 +9,5 @@ export function init(container, ctx) {
   const title = container.querySelector("#ph-title");
   const text = container.querySelector("#ph-text");
   if (title && data.title) title.textContent = data.title;
-  if (text) text.textContent = data.text || "Esta funcionalidade sera implementada em breve.";
+  if (text) text.textContent = data.text || "Esta funcionalidade será implementada em breve.";
 }

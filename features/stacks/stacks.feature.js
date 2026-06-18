@@ -6,7 +6,7 @@
 
 export const stacksFeature = {
   id: "stacks",
-  title: "Analise de Stacks",
+  title: "Análise de Stacks",
   initialRoute: "list",
   routes: {
     list: {

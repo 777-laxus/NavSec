@@ -1,221 +1,194 @@
 // =============================================================
-// vulnerabilidades.js  -  Controlador da tela "Vulnerabilidades encontradas".
-// Segue o contrato de modulo de view usado pelo shell (popup.js):
-//   export function init(root, ctx) { ... }
+// jsvuln.js  -  Controlador da tela "Vulnerabilidades JS" (lista).
+// Contrato de view: export function init(root, ctx).
 //
-// Responsabilidades desta tela:
-//   1) Disparar a Analise Estatica AUTOMATICAMENTE ao abrir esta tela
-//      (chrome.scripting.executeScript na aba ativa) e renderizar os
-//      achados, sem exigir interacao do usuario. O botao "Analisar Pagina
-//      Atual" continua disponivel para permitir uma nova analise manual
-//      (ex.: apos a pagina mudar de estado).
-//   2) Ouvir mensagens da Interceptacao Dinamica de sinks (que roda no MAIN
-//      world, injetada via content_scripts em document_start) e acrescentar
-//      cada alerta em tempo real na lista correspondente.
+// Responsabilidades:
+//   1) Análise estática automática da página ativa (chrome.scripting),
+//      coletando achados enriquecidos (tipo de vulnerabilidade, localização
+//      e PoC) e renderizando-os como itens clicáveis.
+//   2) Ouvir, em tempo real, os sinks interceptados (MAIN world -> relay ->
+//      chrome.runtime) e acrescentar cada alerta na lista correspondente.
+//   3) Ao clicar em um achado, navegar para a rota "detail" da feature,
+//      mantendo o contexto (mesmo padrão da Tela 1).
 //
-// Observacao de arquitetura: scripts no MAIN world nao tem acesso ao objeto
-// chrome.*, entao a interceptacao dinamica so chega aqui se houver um
-// "relay" no ISOLATED world (outro content script, sem "world": "MAIN")
-// que reenvie o evento via chrome.runtime.sendMessage. Este modulo assume
-// que esse relay existe e envia mensagens no formato descrito em
-// `normalizeDynamicMessage`.
+// Compatibilidade: os achados continuam expondo { type, severity,
+// description, sample } (e os dinâmicos { sinkType, ... }) para o report.js;
+// os campos novos (id, vulnClass, location, poc, cwe) são adicionais.
 // =============================================================
 
 const MESSAGE_TYPE_DYNAMIC_ALERT = "navsec:dynamic-sink-detected";
 const MAX_DYNAMIC_ALERTS = 100;
 
-// ---- Funcao injetada na pagina (roda isolada, dentro do contexto da aba) ----
-// Mantida como function declarada para ser serializada pelo executeScript.
-// Nao deve depender de nenhuma variavel externa do popup.
+// ---- Função injetada na página (ISOLATED world; serializada) ----
 function staticAnalysisProbe() {
   const findings = [];
+  let seq = 0;
 
-  function pushFinding(type, severity, description, sample) {
+  function cssPath(el) {
+    if (!el || el.nodeType !== 1) return "";
+    const parts = [];
+    let node = el;
+    let depth = 0;
+    while (node && node.nodeType === 1 && depth < 4) {
+      let part = node.tagName.toLowerCase();
+      if (node.id) { parts.unshift(part + "#" + node.id); break; }
+      const parent = node.parentNode;
+      if (parent && parent.children) {
+        const sameTag = Array.prototype.filter.call(parent.children, (c) => c.tagName === node.tagName);
+        if (sameTag.length > 1) {
+          part += ":nth-of-type(" + (Array.prototype.indexOf.call(sameTag, node) + 1) + ")";
+        }
+      }
+      parts.unshift(part);
+      node = parent;
+      depth++;
+    }
+    return parts.join(" > ");
+  }
+
+  function push(o) {
     findings.push({
-      type,
-      severity, // "alta" | "media" | "baixa"
-      description,
-      sample: sample ? String(sample).slice(0, 180) : null,
+      id: "s" + seq++,
+      type: o.type,
+      severity: o.severity,
+      vulnClass: o.vulnClass,
+      cwe: o.cwe || null,
+      description: o.description,
+      sample: o.sample ? String(o.sample).slice(0, 180) : null,
+      location: { path: location.pathname, selector: o.selector || null, attribute: o.attribute || null },
+      poc: { description: o.pocDescription || null, snippet: o.pocSnippet || null },
     });
   }
 
-  // 1) Atributos de evento inline (potencial XSS / handlers expostos no DOM)
-  const inlineHandlerAttrs = [
-    "onclick", "onerror", "onload", "onmouseover", "onmouseenter",
-    "onfocus", "onblur", "onchange", "onsubmit", "oninput", "onkeydown",
-  ];
+  const inlineHandlerAttrs = ["onclick", "onerror", "onload", "onmouseover", "onmouseenter",
+    "onfocus", "onblur", "onchange", "onsubmit", "oninput", "onkeydown"];
   document.querySelectorAll("*").forEach((el) => {
     inlineHandlerAttrs.forEach((attr) => {
       if (el.hasAttribute(attr)) {
-        pushFinding(
-          "inline-event-handler",
-          "media",
-          `Atributo "${attr}" inline encontrado em <${el.tagName.toLowerCase()}>`,
-          el.getAttribute(attr)
-        );
+        const tag = el.tagName.toLowerCase();
+        push({
+          type: "inline-event-handler", severity: "media",
+          vulnClass: "XSS (handler inline)", cwe: "CWE-79",
+          description: `Atributo "${attr}" inline encontrado em <${tag}>.`,
+          sample: el.getAttribute(attr), selector: cssPath(el), attribute: attr,
+          pocDescription: "Conteúdo controlado pelo atacante neste atributo seria executado como JavaScript no contexto da página.",
+          pocSnippet: `<${tag} ${attr}="alert(document.cookie)">`,
+        });
       }
     });
   });
 
-  // 2) href="javascript:" (vetor classico de XSS)
   document.querySelectorAll('a[href^="javascript:"]').forEach((el) => {
-    pushFinding(
-      "javascript-href",
-      "alta",
-      "Link com esquema javascript: detectado",
-      el.getAttribute("href")
-    );
+    push({
+      type: "javascript-href", severity: "alta",
+      vulnClass: "XSS (esquema javascript:)", cwe: "CWE-79",
+      description: "Link com esquema javascript: detectado.",
+      sample: el.getAttribute("href"), selector: cssPath(el), attribute: "href",
+      pocDescription: "Acionar o link executa o JavaScript que vem após \"javascript:\".",
+      pocSnippet: el.getAttribute("href"),
+    });
   });
 
-  // 3) <script> inline sem nonce/integrity em pagina com CSP declarada
   const cspMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
   document.querySelectorAll("script:not([src])").forEach((el) => {
     if (cspMeta && !el.hasAttribute("nonce")) {
-      pushFinding(
-        "inline-script-sem-nonce",
-        "baixa",
-        "Script inline presente em pagina com CSP, porem sem atributo nonce",
-        null
-      );
+      push({
+        type: "inline-script-sem-nonce", severity: "baixa",
+        vulnClass: "CSP — script inline sem nonce", cwe: "CWE-693",
+        description: "Script inline presente em página com CSP, porém sem atributo nonce.",
+        sample: null, selector: cssPath(el),
+        pocDescription: "Com a CSP atual, um script inline sem nonce pode indicar política frágil ou possibilidade de bypass.",
+        pocSnippet: null,
+      });
     }
   });
 
-  // 4) Formularios sem atributo de protecao CSRF visivel (heuristica simples)
   document.querySelectorAll("form").forEach((form) => {
     const hasHiddenToken = !!form.querySelector(
       'input[type="hidden"][name*="csrf" i], input[type="hidden"][name*="token" i]'
     );
     if (form.method && form.method.toLowerCase() === "post" && !hasHiddenToken) {
-      pushFinding(
-        "form-sem-token-aparente",
-        "baixa",
-        "Formulario POST sem campo oculto de token aparente (heuristica, pode haver falso positivo)",
-        form.action || null
-      );
+      push({
+        type: "form-sem-token-aparente", severity: "baixa",
+        vulnClass: "CSRF (possível)", cwe: "CWE-352",
+        description: "Formulário POST sem campo oculto de token aparente (heurística, pode haver falso positivo).",
+        sample: form.action || null, selector: cssPath(form), attribute: "action",
+        pocDescription: "Sem token anti-CSRF, uma página externa poderia forjar este POST em nome de um usuário autenticado.",
+        pocSnippet: `<form method="POST" action="${form.action || "/endpoint"}"> ...campos... </form>`,
+      });
     }
   });
 
-  // 5) iframes sem sandbox
   document.querySelectorAll("iframe").forEach((frame) => {
     if (!frame.hasAttribute("sandbox")) {
-      pushFinding(
-        "iframe-sem-sandbox",
-        "media",
-        "iframe sem atributo sandbox",
-        frame.getAttribute("src")
-      );
+      push({
+        type: "iframe-sem-sandbox", severity: "media",
+        vulnClass: "Clickjacking / iframe sem sandbox", cwe: "CWE-1021",
+        description: "iframe sem atributo sandbox.",
+        sample: frame.getAttribute("src"), selector: cssPath(frame), attribute: "src",
+        pocDescription: "Sem sandbox, o conteúdo embutido roda com mais privilégios; combinado a clickjacking, amplia o risco.",
+        pocSnippet: `<iframe src="${frame.getAttribute("src") || ""}"></iframe>`,
+      });
     }
   });
 
-  return {
-    url: location.href,
-    timestamp: new Date().toISOString(),
-    findings,
-  };
+  return { url: location.href, timestamp: new Date().toISOString(), findings };
 }
 
-// ---- Helpers de renderizacao ----
+// ---- Helpers de severidade ----
+const SEVERITY_CLASS = { alta: "severity--high", media: "severity--medium", baixa: "severity--low" };
+function severityClass(sev) { return "severity " + (SEVERITY_CLASS[sev] || "severity--low"); }
 
-function severityBadgeClass(severity) {
-  if (severity === "alta") return "severity severity--high";
-  if (severity === "media") return "severity severity--medium";
-  return "severity severity--low";
-}
-
-function escapeHtml(value) {
-  const div = document.createElement("div");
-  div.textContent = value == null ? "" : String(value);
-  return div.innerHTML;
-}
-
-function renderStaticResults(container, payload) {
-  const { findings } = payload;
-
-  if (!findings || findings.length === 0) {
-    container.innerHTML = `
-      <p class="empty-state empty-state--ok">
-        ✅ Nenhuma vulnerabilidade evidente foi encontrada na analise estatica desta pagina.
-      </p>`;
-    return;
-  }
-
-  const items = findings
-    .map((f) => {
-      return `
-        <li class="finding-item">
-          <div class="finding-item__head">
-            <span class="${severityBadgeClass(f.severity)}">${escapeHtml(f.severity)}</span>
-            <span class="finding-item__type">${escapeHtml(f.type)}</span>
-          </div>
-          <p class="finding-item__desc">${escapeHtml(f.description)}</p>
-          ${f.sample ? `<code class="finding-item__sample">${escapeHtml(f.sample)}</code>` : ""}
-        </li>`;
-    })
-    .join("");
-
-  container.innerHTML = `<ul class="result-list">${items}</ul>`;
-}
-
-function appendDynamicAlert(listEl, alert) {
-  // Remove o estado vazio na primeira mensagem real.
-  const emptyState = listEl.querySelector(".empty-state");
-  if (emptyState) emptyState.remove();
-
+// ---- Renderização (DOM seguro: textContent para dados não confiáveis) ----
+function buildFindingItem(finding, kind, onClick) {
   const li = document.createElement("li");
-  li.className = "finding-item finding-item--dynamic";
-  li.innerHTML = `
-    <div class="finding-item__head">
-      <span class="${severityBadgeClass(alert.severity)}">${escapeHtml(alert.severity)}</span>
-      <span class="finding-item__type">${escapeHtml(alert.sinkType)}</span>
-      <time class="finding-item__time">${escapeHtml(alert.time)}</time>
-    </div>
-    <p class="finding-item__desc">${escapeHtml(alert.description)}</p>
-    ${alert.sample ? `<code class="finding-item__sample">${escapeHtml(alert.sample)}</code>` : ""}
-  `;
+  li.className = "finding-item finding-item--clickable" + (kind === "dynamic" ? " finding-item--dynamic" : "");
+  li.dataset.findingId = finding.id;
+  li.setAttribute("role", "button");
+  li.tabIndex = 0;
 
-  listEl.prepend(li);
-
-  // Evita crescimento ilimitado da lista em paginas muito "ruidosas".
-  const items = listEl.querySelectorAll(".finding-item--dynamic");
-  if (items.length > MAX_DYNAMIC_ALERTS) {
-    items[items.length - 1].remove();
+  const head = document.createElement("div");
+  head.className = "finding-item__head";
+  const sev = document.createElement("span");
+  sev.className = severityClass(finding.severity);
+  sev.textContent = finding.severity;
+  const type = document.createElement("span");
+  type.className = "finding-item__type";
+  type.textContent = finding.vulnClass || finding.type || finding.sinkType || "achado";
+  head.append(sev, type);
+  if (kind === "dynamic" && finding.time) {
+    const time = document.createElement("time");
+    time.className = "finding-item__time";
+    time.textContent = finding.time;
+    head.appendChild(time);
   }
+
+  const desc = document.createElement("p");
+  desc.className = "finding-item__desc";
+  desc.textContent = finding.description || "";
+
+  const foot = document.createElement("span");
+  foot.className = "finding-item__more";
+  foot.textContent = "ver detalhes \u203A";
+
+  li.append(head, desc, foot);
+  li.addEventListener("click", () => onClick(finding.id));
+  li.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(finding.id); } });
+  return li;
 }
 
-// Normaliza o formato esperado de mensagem enviada pelo relay da
-// interceptacao dinamica. Mantido em uma funcao isolada para facilitar
-// ajuste caso o formato real da mensagem mude.
-function normalizeDynamicMessage(message) {
-  if (!message || message.type !== MESSAGE_TYPE_DYNAMIC_ALERT) return null;
-
-  const data = message.payload || {};
-  return {
-    sinkType: data.sinkType || "sink-desconhecido",
-    severity: data.severity || "media",
-    description: data.description || "Sink potencialmente perigoso interceptado em tempo de execucao.",
-    sample: data.sample ? String(data.sample).slice(0, 180) : null,
-    time: new Date().toLocaleTimeString("pt-BR"),
-  };
-}
-
-// ---- Obtem a aba ativa de forma segura ----
 async function getActiveTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab || !tab.id) {
-    throw new Error("Nao foi possivel identificar a aba ativa.");
-  }
+  if (!tab || !tab.id) throw new Error("Não foi possível identificar a aba ativa.");
   return tab;
 }
-
-// Algumas paginas (chrome://, Chrome Web Store, paginas de erro, PDFs nativos)
-// nao permitem injecao de scripting por politica do navegador.
 function isInjectableUrl(url) {
   if (!url) return false;
   return /^https?:\/\//i.test(url) || /^file:\/\//i.test(url);
 }
 
 // =============================================================
-// init(root, ctx) - chamado pelo shell ao montar esta view.
+// init(root, ctx)
 // =============================================================
 export function init(root, ctx) {
   const startBtn = root.querySelector("#start-scan-btn");
@@ -232,54 +205,73 @@ export function init(root, ctx) {
     statusEl.dataset.kind = kind || "";
   }
 
+  function openDetail(findingId) {
+    ctx.router.navigate("detail", { findingId });
+  }
+
+  function renderStaticResults(payload) {
+    staticResultsEl.innerHTML = "";
+    const findings = payload.findings || [];
+    if (!findings.length) {
+      const p = document.createElement("p");
+      p.className = "empty-state empty-state--ok";
+      p.textContent = "\u2705 Nenhuma vulnerabilidade evidente foi encontrada na análise estática desta página.";
+      staticResultsEl.appendChild(p);
+      return;
+    }
+    const ul = document.createElement("ul");
+    ul.className = "result-list";
+    findings.forEach((f) => ul.appendChild(buildFindingItem(f, "static", openDetail)));
+    staticResultsEl.appendChild(ul);
+  }
+
+  function appendDynamicAlert(alert) {
+    const empty = dynamicResultsEl.querySelector(".empty-state");
+    if (empty) empty.remove();
+    dynamicResultsEl.prepend(buildFindingItem(alert, "dynamic", openDetail));
+    const items = dynamicResultsEl.querySelectorAll(".finding-item--dynamic");
+    if (items.length > MAX_DYNAMIC_ALERTS) items[items.length - 1].remove();
+  }
+
   async function runStaticScan() {
     if (isScanning) return;
     isScanning = true;
     startBtn.disabled = true;
     staticBlock.dataset.state = "loading";
-    setStatus("Analisando pagina atual...", "loading");
+    setStatus("Analisando página atual\u2026", "loading");
 
     try {
       const tab = await getActiveTab();
-
       if (!isInjectableUrl(tab.url)) {
-        throw new Error(
-          "Esta pagina nao permite analise (ex.: paginas internas do navegador ou da Chrome Web Store)."
-        );
+        throw new Error("Esta página não permite análise (ex.: páginas internas do navegador ou da Chrome Web Store).");
       }
-
       const [injectionResult] = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: staticAnalysisProbe,
       });
-
       if (!injectionResult || !injectionResult.result) {
-        throw new Error("A analise nao retornou resultados.");
+        throw new Error("A análise não retornou resultados.");
       }
-
       const payload = injectionResult.result;
-      renderStaticResults(staticResultsEl, payload);
-      staticBlock.dataset.state = "done";
-
-      // Guarda o ultimo resultado no estado compartilhado, para uso
-      // posterior (ex.: geracao do relatorio em PDF pelo shell).
       ctx.state.lastStaticScan = payload;
+      renderStaticResults(payload);
+      staticBlock.dataset.state = "done";
 
       const total = payload.findings.length;
       setStatus(
-        total === 0
-          ? "Analise concluida: nenhum problema encontrado."
-          : `Analise concluida: ${total} ponto(s) de atencao.`,
+        total === 0 ? "Análise concluída: nenhum problema encontrado."
+                    : `Análise concluída: ${total} ponto(s) de atenção.`,
         total === 0 ? "ok" : "warn"
       );
     } catch (err) {
-      console.error("[NavSec] Falha na analise estatica:", err);
+      console.error("[NavSec] Falha na análise estática:", err);
       staticBlock.dataset.state = "error";
-      staticResultsEl.innerHTML = `
-        <p class="empty-state empty-state--error">
-          ⚠️ ${escapeHtml(err.message || "Erro desconhecido ao executar a analise.")}
-        </p>`;
-      setStatus("Falha ao analisar a pagina.", "error");
+      staticResultsEl.innerHTML = "";
+      const p = document.createElement("p");
+      p.className = "empty-state empty-state--error";
+      p.textContent = "\u26A0\uFE0F " + (err.message || "Erro desconhecido ao executar a análise.");
+      staticResultsEl.appendChild(p);
+      setStatus("Falha ao analisar a página.", "error");
     } finally {
       isScanning = false;
       startBtn.disabled = false;
@@ -288,44 +280,45 @@ export function init(root, ctx) {
 
   startBtn.addEventListener("click", runStaticScan);
 
-  // ---- Interceptacao Dinamica: listener de mensagens em tempo real ----
-  // Cada alerta deve chegar no formato:
-  //   { type: "navsec:dynamic-sink-detected", payload: { sinkType, severity, description, sample } }
-  function handleRuntimeMessage(message, _sender, _sendResponse) {
-    const alert = normalizeDynamicMessage(message);
-    if (!alert) return; // mensagem nao pertence a esta funcionalidade
-
-    dynamicBlock.dataset.state = "active";
-    appendDynamicAlert(dynamicResultsEl, alert);
-
-    // Mantem um registro acumulado no estado compartilhado para o relatorio.
+  function normalizeDynamicMessage(message) {
+    if (!message || message.type !== MESSAGE_TYPE_DYNAMIC_ALERT) return null;
+    const d = message.payload || {};
     if (!Array.isArray(ctx.state.dynamicAlerts)) ctx.state.dynamicAlerts = [];
+    if (typeof ctx.state._dynSeq !== "number") ctx.state._dynSeq = 0;
+    return {
+      id: "d" + ctx.state._dynSeq++,
+      sinkType: d.sinkType || "sink-desconhecido",
+      severity: d.severity || "media",
+      vulnClass: d.vulnClass || d.sinkType || "Sink dinâmico",
+      cwe: d.cwe || null,
+      description: d.description || "Sink potencialmente perigoso interceptado em tempo de execução.",
+      sample: d.sample ? String(d.sample).slice(0, 180) : null,
+      location: d.location || null,
+      poc: d.poc ? { description: d.poc, snippet: d.sample || null } : null,
+      time: new Date().toLocaleTimeString("pt-BR"),
+    };
+  }
+
+  function handleRuntimeMessage(message) {
+    const alert = normalizeDynamicMessage(message);
+    if (!alert) return;
+    dynamicBlock.dataset.state = "active";
+    appendDynamicAlert(alert);
     ctx.state.dynamicAlerts.push(alert);
   }
 
+  if (typeof ctx.state.cleanupJsVulnView === "function") ctx.state.cleanupJsVulnView();
   chrome.runtime.onMessage.addListener(handleRuntimeMessage);
+  ctx.state.cleanupJsVulnView = () => chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
 
-  // Se a view for desmontada/recarregada, evita acumular listeners duplicados.
-  // O shell atual nao expoe um hook de "destroy", mas deixamos o ponto de
-  // extensao preparado: remova o listener aqui caso esse hook seja adicionado.
-  ctx.state.cleanupVulnerabilidadesView = () => {
-    chrome.runtime.onMessage.removeListener(handleRuntimeMessage);
-  };
-
-  // Repopula a lista dinamica caso o usuario volte para esta tela e ja
-  // existam alertas acumulados anteriormente na sessao do popup.
   if (Array.isArray(ctx.state.dynamicAlerts) && ctx.state.dynamicAlerts.length > 0) {
     dynamicBlock.dataset.state = "active";
-    ctx.state.dynamicAlerts.forEach((alert) => appendDynamicAlert(dynamicResultsEl, alert));
+    ctx.state.dynamicAlerts.forEach((a) => appendDynamicAlert(a));
   }
 
-  // Repopula o resultado estatico anterior, se houver, sem precisar re-escanear.
-  // Caso contrario (primeira vez que esta tela e aberta nesta sessao do
-  // popup), dispara a analise estatica automaticamente - o usuario nao
-  // precisa clicar no botao para ver o primeiro resultado.
   if (ctx.state.lastStaticScan) {
     staticBlock.dataset.state = "done";
-    renderStaticResults(staticResultsEl, ctx.state.lastStaticScan);
+    renderStaticResults(ctx.state.lastStaticScan);
   } else {
     runStaticScan();
   }

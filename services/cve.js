@@ -75,9 +75,9 @@ function cvssV3BaseScore(vector) {
 }
 
 function scoreLabel(score) {
-  if (score >= 9.0) return "Critica";
+  if (score >= 9.0) return "Crítica";
   if (score >= 7.0) return "Alta";
-  if (score >= 4.0) return "Media";
+  if (score >= 4.0) return "Média";
   if (score > 0) return "Baixa";
   return "Nenhuma";
 }

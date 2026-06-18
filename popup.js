@@ -40,7 +40,7 @@ document.getElementById("nav-prev").addEventListener("click", () => router.prev(
 document.getElementById("nav-next").addEventListener("click", () => router.next());
 document.getElementById("btn-pdf").addEventListener("click", () => {
   try {
-    downloadReport(router.state.scan);
+    downloadReport(router.state);
   } catch (err) {
     console.error("[NavSec] falha ao gerar o relatorio", err);
   }
