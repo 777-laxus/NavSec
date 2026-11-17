@@ -10,11 +10,6 @@ severidade e orientação de correção.
 
 ---
 
-## Equipe
-
-- **Equipe:** EMBRAZIL
-- **Integrantes:** Alexandre, Atos, Bento e Vinícius
-
 ## Trilha
 
 **Trilha 1 — AppHardener** (diagnóstico e hardening de aplicações web).
