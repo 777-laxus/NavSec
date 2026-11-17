@@ -202,7 +202,3 @@ serviços em `services/` para obter os dados (detecção, CVE, relatório).
 - Enriquecer o relatório em PDF (CWE, PoC, referências por achado).
 
 ---
-
-## Repositório
-
-https://github.com/AtosOmena/NavSec
